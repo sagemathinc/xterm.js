@@ -19,6 +19,18 @@ interface IDisposable {
 const USE_BINARY = os.platform() !== 'win32';
 
 const demoRoot = path.join(__dirname, '..');
+const BASE_URL_ROUTE_PATTERN = /^\/.*\/(xterm\.css|logo\.png|index\.css|fonts\/.*|dist\/.*|src\/.*|terminals(?:\/.*)?|test\/?)$/;
+
+function normalizeBaseUrlRoute(req: express.Request, _res: express.Response, next: express.NextFunction): void {
+  const queryIndex = req.url.indexOf('?');
+  const pathname = queryIndex === -1 ? req.url : req.url.substring(0, queryIndex);
+  const query = queryIndex === -1 ? '' : req.url.substring(queryIndex);
+  const match = BASE_URL_ROUTE_PATTERN.exec(pathname);
+  if (match) {
+    req.url = '/' + match[1] + query;
+  }
+  next();
+}
 
 function startServer(): void {
   const app = express();
@@ -28,12 +40,14 @@ function startServer(): void {
   const unsentOutput: { [pid: number]: string } = {};
   const temporaryDisposable: { [pid: number]: IDisposable } = {};
 
+  app.use(normalizeBaseUrlRoute);
+
   app.use('/xterm.css', express.static(demoRoot + '/../css/xterm.css'));
   app.get('/logo.png', (req, res) => {
     res.sendFile(demoRoot + '/logo.png');
   });
 
-  app.get('/', (req, res) => {
+  app.get(/^\/(?:.*\/)?$/, (req, res) => {
     res.sendFile(demoRoot + '/index.html');
   });
 

@@ -62,7 +62,6 @@ export interface IWindowWithTerminal extends Window {
 declare let window: IWindowWithTerminal;
 
 let term: Terminal | null;
-let protocol: string;
 let socketURL: string;
 let socket: WebSocket | null;
 let pid: string;
@@ -71,6 +70,18 @@ let addonsWindow: AddonsWindow;
 let addonSearchWindow: AddonSearchWindow;
 let addonWebglWindow: WebglWindow;
 let optionsWindow: OptionsWindow;
+
+const demoBaseUrl = new URL('.', document.baseURI);
+
+function getDemoUrl(path: string): string {
+  return new URL(path, demoBaseUrl).toString();
+}
+
+function getDemoWebSocketUrl(path: string): string {
+  const url = new URL(path, demoBaseUrl);
+  url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return url.toString();
+}
 
 const addons: AddonCollection = {
   attach: { name: 'attach', ctor: AttachAddon, canChange: false },
@@ -198,7 +209,7 @@ const createNewWindowButtonHandler: () => void = () => {
   }
 };
 
-if (document.location.pathname === '/test') {
+if (/\/test\/?$/.test(document.location.pathname)) {
   window.Terminal = Terminal;
   window.AttachAddon = AttachAddon;
   window.ClipboardAddon = ClipboardAddon;
@@ -236,6 +247,9 @@ if (document.location.pathname === '/test') {
     findResults: addonSearchWindow.findResultsSpan
   };
   controlBar.activateDefaultTab();
+  if (hasCoarsePrimaryPointer()) {
+    controlBar.hideSidebar();
+  }
 
   // TODO: Most of below should be encapsulated within windows
   paddingElement = styleWindow.paddingElement;
@@ -339,12 +353,11 @@ function createTerminal(): Terminal {
     const rows = size.rows;
     const pixelWidth = Math.round(term!.dimensions?.css?.canvas?.width ?? 0);
     const pixelHeight = Math.round(term!.dimensions?.css?.canvas?.height ?? 0);
-    const url = '/terminals/' + pid + '/size?cols=' + cols + '&rows=' + rows + '&pixelWidth=' + pixelWidth + '&pixelHeight=' + pixelHeight;
+    const url = getDemoUrl('terminals/' + pid + '/size?cols=' + cols + '&rows=' + rows + '&pixelWidth=' + pixelWidth + '&pixelHeight=' + pixelHeight);
 
     fetch(url, { method: 'POST' });
   });
-  protocol = (location.protocol === 'https:') ? 'wss://' : 'ws://';
-  socketURL = protocol + location.hostname + ((location.port) ? (':' + location.port) : '') + '/terminals/';
+  socketURL = getDemoWebSocketUrl('terminals/');
 
   addons.fit.instance!.fit();
 
@@ -362,6 +375,9 @@ function createTerminal(): Terminal {
     // webgl loading failed for some reason, attach with DOM renderer
     term.open(terminalContainer!);
   }
+
+  addDomListener(terminalContainer!, 'pointerdown', focusTerminalFromUserGesture);
+  addDomListener(terminalContainer!, 'touchstart', focusTerminalFromUserGesture);
 
   term.focus();
   updateTerminalContainerBackground();
@@ -392,7 +408,7 @@ function createTerminal(): Terminal {
     } else {
       const pixelWidth = Math.round(term!.dimensions?.css?.canvas?.width ?? 0);
       const pixelHeight = Math.round(term!.dimensions?.css?.canvas?.height ?? 0);
-      const res = await fetch('/terminals?cols=' + term!.cols + '&rows=' + term!.rows + '&pixelWidth=' + pixelWidth + '&pixelHeight=' + pixelHeight, { method: 'POST' });
+      const res = await fetch(getDemoUrl('terminals?cols=' + term!.cols + '&rows=' + term!.rows + '&pixelWidth=' + pixelWidth + '&pixelHeight=' + pixelHeight), { method: 'POST' });
       const processId = await res.text();
       pid = processId;
       socketURL += processId;
@@ -404,6 +420,10 @@ function createTerminal(): Terminal {
   }, 0);
 
   return typedTerm;
+}
+
+function focusTerminalFromUserGesture(): void {
+  term?.focus();
 }
 
 function runRealTerminal(): void {

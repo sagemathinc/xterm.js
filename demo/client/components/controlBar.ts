@@ -214,6 +214,10 @@ export class ControlBar {
     return this._activeTabId;
   }
 
+  public hideSidebar(): void {
+    this._sidebar.classList.add('sidebar-hidden');
+  }
+
   public activateDefaultTab(): void {
     // Restore saved tab or default to first visible tab
     const savedTab = localStorage.getItem('tab');
