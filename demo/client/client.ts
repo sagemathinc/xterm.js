@@ -70,6 +70,12 @@ let addonsWindow: AddonsWindow;
 let addonSearchWindow: AddonSearchWindow;
 let addonWebglWindow: WebglWindow;
 let optionsWindow: OptionsWindow;
+let mobileCopyPanel: HTMLElement | undefined;
+let mobileCopyTextarea: HTMLTextAreaElement | undefined;
+let mobileCopyVisibleButton: HTMLButtonElement | undefined;
+let mobileCopyAllButton: HTMLButtonElement | undefined;
+let mobilePastePanel: HTMLElement | undefined;
+let mobilePasteTextarea: HTMLTextAreaElement | undefined;
 
 const demoBaseUrl = new URL('.', document.baseURI);
 
@@ -246,6 +252,8 @@ if (/\/test\/?$/.test(document.location.pathname)) {
     findPrevious: addonSearchWindow.findPreviousInput,
     findResults: addonSearchWindow.findResultsSpan
   };
+  setupMobileCopyButton();
+  setupMobilePasteButton();
   controlBar.activateDefaultTab();
   if (hasCoarsePrimaryPointer()) {
     controlBar.hideSidebar();
@@ -378,6 +386,8 @@ function createTerminal(): Terminal {
 
   addDomListener(terminalContainer!, 'pointerdown', focusTerminalFromUserGesture);
   addDomListener(terminalContainer!, 'touchstart', focusTerminalFromUserGesture);
+  setupMobileCopyPanel();
+  setupMobilePastePanel();
 
   term.focus();
   updateTerminalContainerBackground();
@@ -424,6 +434,185 @@ function createTerminal(): Terminal {
 
 function focusTerminalFromUserGesture(): void {
   term?.focus();
+}
+
+function setupMobileCopyButton(): void {
+  const button = document.createElement('button');
+  button.textContent = 'Copy';
+  button.classList.add('mobile-copy-button');
+  button.addEventListener('click', () => showMobileCopyPanel('visible'));
+  document.querySelector('.banner-tabs')!.prepend(button);
+}
+
+function setupMobilePasteButton(): void {
+  const button = document.createElement('button');
+  button.textContent = 'Paste';
+  button.classList.add('mobile-paste-button');
+  button.addEventListener('click', pasteFromClipboardOrShowPanel);
+  document.querySelector('.banner-tabs')!.prepend(button);
+}
+
+function setupMobileCopyPanel(): void {
+  mobileCopyPanel?.remove();
+  mobileCopyPanel = document.createElement('div');
+  mobileCopyPanel.id = 'mobile-copy-panel';
+  mobileCopyPanel.classList.add('mobile-transfer-panel');
+
+  const toolbar = document.createElement('div');
+  toolbar.classList.add('mobile-copy-toolbar');
+  mobileCopyVisibleButton = document.createElement('button');
+  mobileCopyVisibleButton.textContent = 'Visible';
+  mobileCopyVisibleButton.addEventListener('click', () => setMobileCopyText('visible'));
+  mobileCopyAllButton = document.createElement('button');
+  mobileCopyAllButton.textContent = 'All';
+  mobileCopyAllButton.addEventListener('click', () => setMobileCopyText('all'));
+  const selectButton = document.createElement('button');
+  selectButton.textContent = 'Select all';
+  selectButton.addEventListener('click', () => selectMobileCopyText());
+  const doneButton = document.createElement('button');
+  doneButton.textContent = 'Done';
+  doneButton.addEventListener('click', () => hideMobileCopyPanel());
+  toolbar.append(mobileCopyVisibleButton, mobileCopyAllButton, selectButton, doneButton);
+
+  mobileCopyTextarea = document.createElement('textarea');
+  mobileCopyTextarea.id = 'mobile-copy-textarea';
+  mobileCopyTextarea.readOnly = true;
+  mobileCopyTextarea.spellcheck = false;
+  mobileCopyTextarea.autocapitalize = 'off';
+  mobileCopyTextarea.autocomplete = 'off';
+  mobileCopyTextarea.wrap = 'off';
+
+  mobileCopyPanel.append(toolbar, mobileCopyTextarea);
+  document.body.appendChild(mobileCopyPanel);
+}
+
+function setupMobilePastePanel(): void {
+  mobilePastePanel?.remove();
+  mobilePastePanel = document.createElement('div');
+  mobilePastePanel.id = 'mobile-paste-panel';
+  mobilePastePanel.classList.add('mobile-transfer-panel');
+
+  const toolbar = document.createElement('div');
+  toolbar.classList.add('mobile-copy-toolbar');
+  const pasteButton = document.createElement('button');
+  pasteButton.textContent = 'Paste';
+  pasteButton.addEventListener('click', pasteFromMobilePastePanel);
+  const doneButton = document.createElement('button');
+  doneButton.textContent = 'Done';
+  doneButton.addEventListener('click', () => hideMobilePastePanel());
+  toolbar.append(pasteButton, doneButton);
+
+  mobilePasteTextarea = document.createElement('textarea');
+  mobilePasteTextarea.id = 'mobile-paste-textarea';
+  mobilePasteTextarea.spellcheck = false;
+  mobilePasteTextarea.autocapitalize = 'off';
+  mobilePasteTextarea.autocomplete = 'off';
+  mobilePasteTextarea.placeholder = 'Paste text here';
+
+  mobilePastePanel.append(toolbar, mobilePasteTextarea);
+  document.body.appendChild(mobilePastePanel);
+}
+
+function showMobileCopyPanel(mode: 'visible' | 'all'): void {
+  hideMobilePastePanel(false);
+  setMobileCopyText(mode);
+  mobileCopyPanel?.classList.add('active');
+  mobileCopyTextarea?.focus({ preventScroll: true });
+}
+
+function hideMobileCopyPanel(focusTerminal: boolean = true): void {
+  mobileCopyPanel?.classList.remove('active');
+  mobileCopyTextarea?.blur();
+  if (focusTerminal) {
+    term?.focus();
+  }
+}
+
+async function pasteFromClipboardOrShowPanel(): Promise<void> {
+  hideMobileCopyPanel(false);
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) {
+      pasteTextToTerminal(text);
+      return;
+    }
+  } catch {
+    // Fall through to the manual paste panel when browser permissions block clipboard reads.
+  }
+  showMobilePastePanel();
+}
+
+function showMobilePastePanel(): void {
+  if (!mobilePastePanel || !mobilePasteTextarea) {
+    return;
+  }
+  hideMobileCopyPanel(false);
+  mobilePasteTextarea.value = '';
+  mobilePastePanel.classList.add('active');
+  mobilePasteTextarea.focus({ preventScroll: true });
+}
+
+function hideMobilePastePanel(focusTerminal: boolean = true): void {
+  mobilePastePanel?.classList.remove('active');
+  mobilePasteTextarea?.blur();
+  if (focusTerminal) {
+    term?.focus();
+  }
+}
+
+function pasteFromMobilePastePanel(): void {
+  const text = mobilePasteTextarea?.value;
+  if (text) {
+    pasteTextToTerminal(text);
+  }
+  hideMobilePastePanel();
+}
+
+function pasteTextToTerminal(text: string): void {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(text);
+  } else {
+    term?.paste(text);
+  }
+  term?.focus();
+}
+
+function setMobileCopyText(mode: 'visible' | 'all'): void {
+  if (!term || !mobileCopyTextarea) {
+    return;
+  }
+
+  mobileCopyTextarea.value = mode === 'visible' ? getVisibleTerminalText() : getAllTerminalText();
+  mobileCopyTextarea.scrollTop = 0;
+  mobileCopyTextarea.setSelectionRange(0, 0);
+  mobileCopyVisibleButton?.classList.toggle('active', mode === 'visible');
+  mobileCopyAllButton?.classList.toggle('active', mode === 'all');
+}
+
+function selectMobileCopyText(): void {
+  if (!mobileCopyTextarea) {
+    return;
+  }
+  mobileCopyTextarea.focus({ preventScroll: true });
+  mobileCopyTextarea.select();
+}
+
+function getVisibleTerminalText(): string {
+  const buffer = term!.buffer.active;
+  const lines: string[] = [];
+  for (let y = 0; y < term!.rows; y++) {
+    lines.push(buffer.getLine(buffer.viewportY + y)?.translateToString(true) ?? '');
+  }
+  return lines.join('\n');
+}
+
+function getAllTerminalText(): string {
+  const buffer = term!.buffer.active;
+  const lines: string[] = [];
+  for (let y = 0; y < buffer.length; y++) {
+    lines.push(buffer.getLine(y)?.translateToString(true) ?? '');
+  }
+  return lines.join('\n');
 }
 
 function runRealTerminal(): void {

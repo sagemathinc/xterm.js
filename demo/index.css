@@ -42,6 +42,16 @@ body {
     background: rgba(255,255,255,0.2);
     color: #fff;
 }
+.banner-tabs button.mobile-copy-button {
+    background: #5DA5D5;
+    color: #101010;
+    font-weight: bold;
+}
+.banner-tabs button.mobile-paste-button {
+    background: #5BCC5B;
+    color: #101010;
+    font-weight: bold;
+}
 
 p {
     font-size: 0.9em;
@@ -89,6 +99,77 @@ pre {
 div:first-of-type.grid {
     flex: 2;
     height: 100%;
+}
+
+.mobile-transfer-panel {
+    display: none;
+    position: fixed;
+    inset: 24px 0 0 0;
+    z-index: 3000;
+    background: #161716;
+    color: #f8f8f8;
+}
+.mobile-transfer-panel.active {
+    display: flex;
+    flex-direction: column;
+}
+.mobile-copy-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    background: #232422;
+    border-bottom: 1px solid #333;
+}
+.mobile-copy-toolbar button {
+    background: #3b3d3a;
+    border: 1px solid #5d5f5a;
+    color: #f8f8f8;
+    padding: 8px 10px;
+    font-size: 14px;
+}
+.mobile-copy-toolbar button.active {
+    background: #5DA5D5;
+    border-color: #72f0ff;
+    color: #101010;
+}
+#mobile-copy-textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 0;
+    padding: 8px;
+    margin: 0;
+    resize: none;
+    background: #2D2E2C;
+    color: #F8F8F8;
+    font-family: "Fira Code", monospace, "Powerline Extra Symbols";
+    font-size: 14px;
+    line-height: 1.3;
+    white-space: pre;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+}
+#mobile-paste-textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 0;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 0;
+    padding: 8px;
+    margin: 0;
+    resize: none;
+    background: #2D2E2C;
+    color: #F8F8F8;
+    font-family: "Fira Code", monospace, "Powerline Extra Symbols";
+    font-size: 14px;
+    line-height: 1.3;
 }
 
 /* Sidebar */
