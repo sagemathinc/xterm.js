@@ -323,7 +323,9 @@ export class MouseService implements IMouseService {
   }
 
   private _handleTouchScrollAsKeys(e: IGestureEvent): void {
-    const cellHeight = this._renderService?.dimensions.css.cell.height;
+    const cellHeight = this._renderService?.hasRenderer()
+      ? this._renderService.dimensions.css.cell.height
+      : undefined;
     if (!cellHeight) {
       return;
     }
@@ -344,7 +346,9 @@ export class MouseService implements IMouseService {
   }
 
   private _handleTouchScrollAsWheel(ctx: IMouseBindContext, e: IGestureEvent): void {
-    const cellHeight = this._renderService?.dimensions.css.cell.height;
+    const cellHeight = this._renderService?.hasRenderer()
+      ? this._renderService.dimensions.css.cell.height
+      : undefined;
     if (!cellHeight) {
       return;
     }

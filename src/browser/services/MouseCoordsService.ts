@@ -17,6 +17,9 @@ export class MouseCoordsService implements IMouseCoordsService {
   }
 
   public getCoords(event: {clientX: number, clientY: number}, element: HTMLElement, colCount: number, rowCount: number, isSelection?: boolean): [number, number] | undefined {
+    if (!this._renderService.hasRenderer()) {
+      return undefined;
+    }
     return getCoords(
       getWindow(element),
       event,
@@ -32,7 +35,7 @@ export class MouseCoordsService implements IMouseCoordsService {
 
   public getMouseReportCoords(event: MouseEvent, element: HTMLElement): { col: number, row: number, x: number, y: number } | undefined {
     const coords = getCoordsRelativeToElement(getWindow(element), event, element);
-    if (!this._charSizeService.hasValidSize) {
+    if (!this._charSizeService.hasValidSize || !this._renderService.hasRenderer()) {
       return undefined;
     }
     coords[0] = Math.min(Math.max(coords[0], 0), this._renderService.dimensions.css.canvas.width - 1);

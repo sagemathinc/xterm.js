@@ -149,7 +149,7 @@ export class CoreBrowserTerminal extends CoreTerminal implements ITerminal {
   public readonly onDimensionsChange = this._onDimensionsChange.event;
 
   public get dimensions(): IRenderDimensionsApi | undefined {
-    if (!this._renderService) {
+    if (!this._renderService || !this._renderService.hasRenderer()) {
       return undefined;
     }
     const dimensions = this._renderService.dimensions;
@@ -335,7 +335,7 @@ export class CoreBrowserTerminal extends CoreTerminal implements ITerminal {
   }
 
   private _syncTextArea(): void {
-    if (!this.textarea || !this.buffer.isCursorInViewport || this._compositionHelper!.isComposing || !this._renderService) {
+    if (!this.textarea || !this.buffer.isCursorInViewport || this._compositionHelper!.isComposing || !this._renderService?.hasRenderer()) {
       return;
     }
     const cursorY = this.buffer.ybase + this.buffer.y;
@@ -1134,7 +1134,7 @@ export class CoreBrowserTerminal extends CoreTerminal implements ITerminal {
   }
 
   private _reportWindowsOptions(type: WindowsOptionsReportType): void {
-    if (!this._renderService) {
+    if (!this._renderService?.hasRenderer()) {
       return;
     }
 

@@ -398,7 +398,7 @@ export class AccessibilityManager extends Disposable {
   }
 
   private _refreshRowsDimensions(): void {
-    if (!this._renderService.dimensions.css.cell.height) {
+    if (this._store.isDisposed || !this._renderService.hasRenderer() || !this._renderService.dimensions.css.cell.height) {
       return;
     }
     Object.assign(this._accessibilityContainer.style, {
@@ -415,6 +415,9 @@ export class AccessibilityManager extends Disposable {
   }
 
   private _refreshRowDimensions(element: HTMLElement): void {
+    if (this._store.isDisposed || !this._renderService.hasRenderer()) {
+      return;
+    }
     element.style.height = `${this._renderService.dimensions.css.cell.height}px`;
   }
 
@@ -428,6 +431,9 @@ export class AccessibilityManager extends Disposable {
    * (e.g. CJK).
    */
   private _alignRowWidth(element: HTMLElement): void {
+    if (this._store.isDisposed || !this._renderService.hasRenderer()) {
+      return;
+    }
     element.style.transform = '';
     const width = element.getBoundingClientRect().width;
     const lastColumn = this._rowColumns.get(element)?.slice(-1)?.[0];

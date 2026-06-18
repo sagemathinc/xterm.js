@@ -46,16 +46,22 @@ export class BufferDecorationRenderer extends Disposable {
   }
 
   private _queueRefresh(): void {
+    if (this._store.isDisposed || !this._renderService.hasRenderer()) {
+      return;
+    }
     if (this._animationFrame !== undefined) {
       return;
     }
     this._animationFrame = this._renderService.addRefreshCallback(() => {
-      this._doRefreshDecorations();
       this._animationFrame = undefined;
+      this._doRefreshDecorations();
     });
   }
 
   private _doRefreshDecorations(): void {
+    if (this._store.isDisposed || !this._renderService.hasRenderer()) {
+      return;
+    }
     for (const decoration of this._decorationService.decorations) {
       this._renderDecoration(decoration);
     }
