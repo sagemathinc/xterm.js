@@ -121,6 +121,9 @@ export class Viewport extends Disposable {
   }
 
   public scrollLines(disp: number): void {
+    if (this._isDisposed || !this._renderService.hasRenderer()) {
+      return;
+    }
     const pos = this._scrollableElement.getScrollPosition();
     this._scrollableElement.setScrollPosition({
       reuseAnimation: true,
@@ -129,6 +132,9 @@ export class Viewport extends Disposable {
   }
 
   public scrollToLine(line: number, disableSmoothScroll?: boolean): void {
+    if (this._isDisposed || !this._renderService.hasRenderer()) {
+      return;
+    }
     if (disableSmoothScroll) {
       this._latestYDisp = line;
     }
@@ -165,12 +171,15 @@ export class Viewport extends Disposable {
     }
     this._queuedAnimationFrame = this._renderService.addRefreshCallback(() => {
       this._queuedAnimationFrame = undefined;
+      if (this._isDisposed || !this._renderService.hasRenderer()) {
+        return;
+      }
       this._sync(this._latestYDisp);
     });
   }
 
   private _sync(ydisp: number = this._bufferService.buffer.ydisp): void {
-    if (!this._renderService || this._isSyncing) {
+    if (this._isDisposed || !this._renderService.hasRenderer() || this._isSyncing) {
       return;
     }
     // Defer DOM scroll updates during synchronized output to prevent visible
@@ -202,7 +211,7 @@ export class Viewport extends Disposable {
   }
 
   private _handleScroll(e: IScrollEvent): void {
-    if (!this._renderService) {
+    if (this._isDisposed || !this._renderService.hasRenderer()) {
       return;
     }
     if (this._isHandlingScroll || this._suppressOnScrollHandler) {
