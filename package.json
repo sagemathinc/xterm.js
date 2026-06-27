@@ -1,11 +1,14 @@
 {
-  "name": "@xterm/xterm",
-  "description": "Full xterm terminal, in your browser",
-  "version": "5.5.0",
+  "name": "@cocalc/xterm",
+  "description": "CoCalc-patched xterm.js 5.5.0 with native iOS touch copy/paste and buffer line crash guards",
+  "version": "5.5.0-cocalc.5",
   "main": "lib/xterm.js",
   "style": "css/xterm.css",
   "types": "typings/xterm.d.ts",
-  "repository": "https://github.com/xtermjs/xterm.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sagemathinc/xterm.js.git"
+  },
   "license": "MIT",
   "keywords": [
     "cli",
