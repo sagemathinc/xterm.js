@@ -561,6 +561,27 @@ describe('InputHandler', () => {
       assert.equal(bufferService.buffer.lines.get(2)!.isWrapped, false);
     });
   });
+  describe('lineFeed', () => {
+    it('should recreate a missing cursor line before clearing wrap state', () => {
+      bufferService.buffer.lines.set(1, undefined as any);
+
+      inputHandler.lineFeed();
+
+      const line = bufferService.buffer.lines.get(1);
+      assert.ok(line);
+      assert.equal(line!.isWrapped, false);
+    });
+
+    it('should extend short active buffers before clearing wrap state', () => {
+      bufferService.buffer.lines.length = 1;
+
+      inputHandler.lineFeed();
+
+      const line = bufferService.buffer.lines.get(1);
+      assert.ok(line);
+      assert.equal(line!.isWrapped, false);
+    });
+  });
   describe('print', () => {
     it('should not cause an infinite loop (regression test)', () => {
       const inputHandler = new TestInputHandler(
@@ -576,6 +597,15 @@ describe('InputHandler', () => {
       const container = new Uint32Array(10);
       container[0] = 0x200B;
       inputHandler.print(container, 0, 1);
+    });
+    it('should recreate a missing wrapped target line', async () => {
+      bufferService.buffer.lines.set(1, undefined as any);
+
+      await inputHandler.parseP('a'.repeat(bufferService.cols + 1));
+
+      const line = bufferService.buffer.lines.get(1);
+      assert.ok(line);
+      assert.equal(line!.isWrapped, true);
     });
     it('should clear cells to the right on early wrap-around', async () => {
       bufferService.resize(5, 5);

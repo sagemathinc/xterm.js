@@ -4,7 +4,7 @@
  * @license MIT
  */
 
-import { IInputHandler, IAttributeData, IDisposable, IWindowOptions, IColorEvent, IParseStack, ColorIndex, ColorRequestType, SpecialColorIndex } from 'common/Types';
+import { IInputHandler, IAttributeData, IDisposable, IWindowOptions, IColorEvent, IParseStack, ColorIndex, ColorRequestType, SpecialColorIndex, IBufferLine } from 'common/Types';
 import { C0, C1 } from 'common/data/EscapeSequences';
 import { CHARSETS, DEFAULT_CHARSET } from 'common/data/Charsets';
 import { EscapeSequenceParser } from 'common/parser/EscapeSequenceParser';
@@ -567,9 +567,10 @@ export class InputHandler extends Disposable implements IInputHandler {
             if (this._activeBuffer.y >= this._bufferService.rows) {
               this._activeBuffer.y = this._bufferService.rows - 1;
             }
-            // The line already exists (eg. the initial viewport), mark it as a
-            // wrapped line
-            this._activeBuffer.lines.get(this._activeBuffer.ybase + this._activeBuffer.y)!.isWrapped = true;
+            // The line should already exist (eg. the initial viewport), but
+            // resize/reflow/reset races may leave a hole. Ensure it before
+            // marking it wrapped.
+            this._ensureActiveBufferLine(this._activeBuffer.ybase + this._activeBuffer.y, true);
           }
           // row changed, get it again
           bufferRow = this._activeBuffer.lines.get(this._activeBuffer.ybase + this._activeBuffer.y)!;
@@ -696,6 +697,23 @@ export class InputHandler extends Disposable implements IInputHandler {
     return true;
   }
 
+  private _ensureActiveBufferLine(index: number, isWrapped?: boolean): IBufferLine | undefined {
+    const lines = this._activeBuffer.lines;
+    while (index >= lines.length && lines.length < lines.maxLength) {
+      lines.push(this._activeBuffer.getBlankLine(this._eraseAttrData()));
+    }
+
+    let line = index < lines.length ? lines.get(index) : undefined;
+    if (!line && index < lines.length) {
+      line = this._activeBuffer.getBlankLine(this._eraseAttrData());
+      lines.set(index, line);
+    }
+    if (line && isWrapped !== undefined) {
+      line.isWrapped = isWrapped;
+    }
+    return line;
+  }
+
   /**
    * LF
    * Line Feed or New Line (NL).  (LF  is Ctrl-J).
@@ -723,7 +741,7 @@ export class InputHandler extends Disposable implements IInputHandler {
       // reprint is common, especially on resize. Note that the windowsMode wrapped line heuristics
       // can mess with this so windowsMode should be disabled, which is recommended on Windows build
       // 21376 and above.
-      this._activeBuffer.lines.get(this._activeBuffer.ybase + this._activeBuffer.y)!.isWrapped = false;
+      this._ensureActiveBufferLine(this._activeBuffer.ybase + this._activeBuffer.y, false);
     }
     // If the end of the line is hit, prevent this action from wrapping around to the next line.
     if (this._activeBuffer.x >= this._bufferService.cols) {
